@@ -110,7 +110,7 @@ export function LoadFilesSection() {
 
         setUploadStatus({
           type: 'success',
-          message: `✓ [MOCK] File "${fileName}" would be uploaded to ${volumePath}\n\nNote: Deploy to Vercel with the API route to enable real uploads. See VERCEL_DEPLOYMENT.md`,
+          message: `✓ [MOCK] File "${fileName}" would be uploaded to ${volumePath}\n\nNote: Deploy to Vercel with the API route to enable real uploads. See VERCEL_SETUP.md`,
         });
         setSelectedFile(null);
         const fileInput = document.getElementById('file-upload') as HTMLInputElement;
