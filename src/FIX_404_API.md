@@ -1,9 +1,46 @@
 # Fix 404 API Routes on Vercel
 
-## 🔴 Problem
-Your API routes are returning 404: `https://databricks-gui-wireframe-v4.vercel.app/api/test`
+## 🔴 Current Problem
+Your API routes are returning 404 at `https://databricks-gui-wireframe-v4.vercel.app/api/test`
+
+**Symptoms:**
+- ✅ Static site works: https://databricks-gui-wireframe-v4.vercel.app/
+- ❌ API test endpoint: https://databricks-gui-wireframe-v4.vercel.app/api/test → 404
+- ❌ File uploads show "[MOCK]" prefix
 
 This means Vercel is deploying the static site but NOT deploying the serverless functions.
+
+---
+
+## 🎯 Most Likely Cause
+
+**Your repository structure might be incorrect.** The `/api` folder must be at the ROOT of your repository, not nested inside other folders.
+
+### ✅ CORRECT Structure:
+```
+your-repo/               ← Root of your Git repository
+├── api/                 ← Must be here!
+│   ├── test.js
+│   └── upload-to-databricks.js
+├── components/
+├── App.tsx
+├── package.json
+├── vercel.json
+└── ...
+```
+
+### ❌ WRONG Structure (won't work):
+```
+your-repo/
+├── src/
+│   ├── api/            ← Too deep!
+│   ├── components/
+│   └── App.tsx
+├── package.json
+└── ...
+```
+
+---
 
 ## ✅ Solution
 

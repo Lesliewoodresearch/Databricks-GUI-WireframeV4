@@ -4,14 +4,7 @@
 const formidable = require('formidable');
 const fs = require('fs');
 
-// Disable default body parser for multipart/form-data
-module.exports.config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -110,3 +103,5 @@ module.exports = async function handler(req, res) {
     });
   }
 }
+
+module.exports = handler;

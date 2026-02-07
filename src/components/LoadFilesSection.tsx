@@ -91,6 +91,9 @@ export function LoadFilesSection() {
         formData.append('catalog_path', selectedPath);
 
         console.log('Attempting upload via API route...');
+        console.log('API URL:', '/api/upload-to-databricks');
+        console.log('Workspace URL:', workspaceUrl);
+        console.log('Catalog Path:', selectedPath);
         
         const response = await fetch('/api/upload-to-databricks', {
           method: 'POST',
@@ -101,6 +104,18 @@ export function LoadFilesSection() {
         console.log('API Response ok:', response.ok);
 
         if (response.ok) {
+          // First check content type
+          const contentType = response.headers.get('content-type');
+          console.log('API Response Content-Type:', contentType);
+          
+          // If it's HTML instead of JSON, log it
+          if (contentType && contentType.includes('text/html')) {
+            const htmlText = await response.text();
+            console.error('❌ API returned HTML instead of JSON!');
+            console.error('First 500 chars:', htmlText.substring(0, 500));
+            throw new Error('API endpoint is returning HTML instead of JSON. The serverless function may not be deployed correctly.');
+          }
+          
           const data = await response.json();
           console.log('API Response data:', data);
           
@@ -121,6 +136,7 @@ export function LoadFilesSection() {
           let errorMsg = `API returned ${response.status}`;
           try {
             const errorData = await response.json();
+            console.error('API Error JSON:', errorData);
             errorMsg = errorData.error || errorMsg;
           } catch (e) {
             const errorText = await response.text();
@@ -130,20 +146,27 @@ export function LoadFilesSection() {
           throw new Error(errorMsg);
         }
       } catch (apiError: any) {
-        // Mock mode for development/testing
-        console.log('API route failed:', apiError.message);
-        console.log('Using mock upload mode');
+        // Show actual error instead of falling back to mock
+        console.error('Upload API Error:', apiError);
         
-        // Simulate upload delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Check if this is a network error (API not available) or an actual error
+        if (apiError.message.includes('Failed to fetch') || apiError.message.includes('NetworkError')) {
+          console.log('API route not reachable, using mock mode');
+          
+          // Simulate upload delay
+          await new Promise(resolve => setTimeout(resolve, 1500));
 
-        setUploadStatus({
-          type: 'success',
-          message: `✓ [MOCK] File "${fileName}" would be uploaded to ${volumePath}\n\nNote: Deploy to Vercel with the API route to enable real uploads. See VERCEL_SETUP.md`,
-        });
-        setSelectedFile(null);
-        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
+          setUploadStatus({
+            type: 'success',
+            message: `✓ [MOCK] File \"${fileName}\" would be uploaded to ${volumePath}\n\nNote: API routes not available. Check /FIX_404_API.md for troubleshooting.`,
+          });
+          setSelectedFile(null);
+          const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+          if (fileInput) fileInput.value = '';
+        } else {
+          // This is a real error from the API, show it
+          throw apiError;
+        }
       }
     } catch (error: any) {
       console.error('Upload error:', error);
