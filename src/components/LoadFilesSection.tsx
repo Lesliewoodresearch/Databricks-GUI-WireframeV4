@@ -9,6 +9,9 @@ export function LoadFilesSection() {
     type: 'success' | 'error' | null;
     message: string;
   }>({ type: null, message: '' });
+  
+  // Detect Figma preview environment
+  const [isInFigmaPreview, setIsInFigmaPreview] = useState(false);
 
   // Databricks credentials (in production, these would come from settings/database)
   const [workspaceUrl, setWorkspaceUrl] = useState('https://dbc-968ce34c-e36d.cloud.databricks.com');
@@ -23,15 +26,26 @@ export function LoadFilesSection() {
       setDatabricksToken(config.databricksToken || '');
     }
     
-    // Test if API routes are available
-    fetch('/api/test')
-      .then(res => res.json())
-      .then(data => {
-        console.log('✓ API routes are available:', data);
-      })
-      .catch(err => {
-        console.log('✗ API routes not available (running in mock mode):', err.message);
-      });
+    // Detect if we're in Figma preview environment
+    const isInFigmaPreview = window.location.hostname.includes('figma.com') || 
+                             window.self !== window.top;
+    
+    setIsInFigmaPreview(isInFigmaPreview);
+    
+    if (isInFigmaPreview) {
+      console.log('🎨 Running in Figma Make preview - API routes not available');
+      console.log('✓ Deploy to Vercel to enable real API functionality');
+    } else {
+      // Test if API routes are available
+      fetch('/api/test')
+        .then(res => res.json())
+        .then(data => {
+          console.log('✓ API routes are available:', data);
+        })
+        .catch(err => {
+          console.log('✗ API routes not available:', err.message);
+        });
+    }
   }, []);
 
   // Save when credentials change
@@ -134,13 +148,31 @@ export function LoadFilesSection() {
         } else {
           // Try to get error details
           let errorMsg = `API returned ${response.status}`;
+          const contentType = response.headers.get('content-type');
+          
           try {
-            const errorData = await response.json();
-            console.error('API Error JSON:', errorData);
-            errorMsg = errorData.error || errorMsg;
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await response.json();
+              console.error('API Error JSON:', errorData);
+              
+              // Show detailed error information
+              if (errorData.error) {
+                errorMsg = errorData.error;
+              }
+              if (errorData.details) {
+                console.error('Error details:', errorData.details);
+              }
+              if (errorData.stack) {
+                console.error('Stack trace:', errorData.stack);
+              }
+            } else {
+              const errorText = await response.text();
+              console.error('API Error Text:', errorText);
+              errorMsg = errorText || errorMsg;
+            }
           } catch (e) {
-            // If JSON parsing fails, try to read as text
-            console.error('Could not parse error as JSON:', e);
+            // If reading response fails, use status text
+            console.error('Could not parse error response:', e);
             errorMsg = `API error ${response.status}: ${response.statusText}`;
           }
           throw new Error(errorMsg);
@@ -182,6 +214,23 @@ export function LoadFilesSection() {
   return (
     <div className="space-y-4">
       <h3 className="text-white text-lg font-semibold">Upload Files to Databricks</h3>
+      
+      {/* Figma Preview Warning */}
+      {isInFigmaPreview && (
+        <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-yellow-300 font-medium mb-1">
+                🎨 Figma Make Preview Mode
+              </p>
+              <p className="text-xs text-yellow-200/80">
+                API routes don't work in the preview. To test real Databricks uploads, visit your deployed Vercel site.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Databricks Configuration */}
       <div className="space-y-3 bg-slate-900/50 border border-slate-700 rounded-lg p-4">
