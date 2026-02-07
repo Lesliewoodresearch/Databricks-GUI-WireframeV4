@@ -104,4 +104,11 @@ async function handler(req, res) {
   }
 }
 
+// Disable Next.js body parser for file uploads
+handler.config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
 module.exports = handler;
