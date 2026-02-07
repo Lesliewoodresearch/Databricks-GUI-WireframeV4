@@ -1,10 +1,15 @@
 // Vercel Serverless Function to upload files to Databricks
-// This file should be placed in the /api directory of your Vercel project
+import formidable from 'formidable';
+import fs from 'fs';
 
-const formidable = require('formidable');
-const fs = require('fs');
+// Disable Next.js body parser for file uploads
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-async function handler(req, res) {
+export default async function handler(req, res) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -103,12 +108,3 @@ async function handler(req, res) {
     });
   }
 }
-
-// Disable Next.js body parser for file uploads
-handler.config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-module.exports = handler;
