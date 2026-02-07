@@ -62,37 +62,47 @@ export function LoadFilesSection() {
     setUploadStatus({ type: null, message: '' });
 
     try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('workspace_url', workspaceUrl);
-      formData.append('databricks_token', databricksToken);
-      formData.append('catalog_path', selectedPath);
+      // Parse catalog path (format: catalog/schema)
+      const [catalog, schema] = selectedPath.split('/');
+      if (!catalog || !schema) {
+        throw new Error('Invalid catalog path format. Expected: catalog/schema');
+      }
 
-      // Call Vercel API route
-      const response = await fetch('/api/upload-to-databricks', {
-        method: 'POST',
-        body: formData,
+      // Read file as ArrayBuffer
+      const fileBuffer = await selectedFile.arrayBuffer();
+
+      // Create the file path in Databricks
+      const fileName = selectedFile.name;
+      const volumePath = `/Volumes/${catalog}/${schema}/default/${fileName}`;
+
+      // Upload directly to Databricks using the Files API
+      const uploadUrl = `${workspaceUrl}/api/2.0/fs/files${volumePath}`;
+
+      console.log(`Uploading to: ${uploadUrl}`);
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${databricksToken}`,
+          'Content-Type': 'application/octet-stream',
+        },
+        body: fileBuffer,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('Databricks API Error:', errorText);
+        throw new Error(`Databricks upload failed: ${uploadResponse.status} - ${errorText}`);
       }
 
-      if (data.success) {
-        setUploadStatus({
-          type: 'success',
-          message: `✓ File uploaded successfully to ${data.file.path}`,
-        });
-        setSelectedFile(null);
-        // Reset file input
-        const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
-      } else {
-        throw new Error(data.error || 'Upload failed');
-      }
+      setUploadStatus({
+        type: 'success',
+        message: `✓ File uploaded successfully to ${volumePath}`,
+      });
+      setSelectedFile(null);
+      // Reset file input
+      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
     } catch (error: any) {
       console.error('Upload error:', error);
       setUploadStatus({
