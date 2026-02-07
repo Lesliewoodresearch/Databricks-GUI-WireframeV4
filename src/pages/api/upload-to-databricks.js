@@ -24,9 +24,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parse form data
-    const form = formidable({});
-    const [fields, files] = await form.parse(req);
+    // Parse form data using formidable v3 API
+    const form = new formidable.IncomingForm();
+    
+    const parseForm = () => new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve({ fields, files });
+      });
+    });
+
+    const { fields, files } = await parseForm();
 
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     const workspaceUrl = Array.isArray(fields.workspace_url) ? fields.workspace_url[0] : fields.workspace_url;
