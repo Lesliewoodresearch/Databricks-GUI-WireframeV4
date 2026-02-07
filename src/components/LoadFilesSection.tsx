@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Folder, File, ChevronRight, Upload, CheckCircle, AlertCircle } from 'lucide-react';
-import { supabase } from '../lib/supabaseClient';
 
 export function LoadFilesSection() {
   const [selectedPath, setSelectedPath] = useState('maincatalog/myapp');
@@ -70,12 +69,17 @@ export function LoadFilesSection() {
       formData.append('databricks_token', databricksToken);
       formData.append('catalog_path', selectedPath);
 
-      // Call Supabase Edge Function
-      const { data, error } = await supabase.functions.invoke('upload-to-databricks', {
+      // Call Vercel API route
+      const response = await fetch('/api/upload-to-databricks', {
+        method: 'POST',
         body: formData,
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Upload failed');
+      }
 
       if (data.success) {
         setUploadStatus({
