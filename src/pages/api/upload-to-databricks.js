@@ -1,5 +1,5 @@
 // Vercel Serverless Function to upload files to Databricks
-import formidable from 'formidable';
+import { IncomingForm } from 'formidable';
 import fs from 'fs';
 
 // Disable Next.js body parser for file uploads
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
 
   try {
     // Parse form data using formidable v3 API
-    const form = new formidable.IncomingForm();
+    const form = new IncomingForm();
     
     const parseForm = () => new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
