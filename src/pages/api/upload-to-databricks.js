@@ -1,5 +1,5 @@
 // Vercel Serverless Function to upload files to Databricks
-import { IncomingForm } from 'formidable';
+import formidable from 'formidable';
 import fs from 'fs';
 
 // Disable Next.js body parser for file uploads
@@ -25,7 +25,8 @@ export default async function handler(req, res) {
 
   try {
     // Parse form data using formidable v3 API
-    const form = new IncomingForm();
+    // When using default import, access formidable.formidable
+    const form = formidable.formidable({});
     
     const parseForm = () => new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
@@ -66,7 +67,6 @@ export default async function handler(req, res) {
 
     // Upload to Databricks using the Files API
     const uploadUrl = `${workspaceUrl}/api/2.0/fs/files${volumePath}`;
-
     console.log(`Uploading to: ${uploadUrl}`);
 
     const uploadResponse = await fetch(uploadUrl, {
@@ -81,7 +81,6 @@ export default async function handler(req, res) {
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
       console.error('Databricks API Error:', errorText);
-
       return res.status(500).json({
         success: false,
         error: `Databricks upload failed: ${uploadResponse.status} - ${errorText}`,
@@ -105,10 +104,8 @@ export default async function handler(req, res) {
       },
       message: 'File uploaded successfully to Databricks',
     });
-
   } catch (error) {
     console.error('API Error:', error);
-
     return res.status(500).json({
       success: false,
       error: error.message || 'Unknown error occurred',
