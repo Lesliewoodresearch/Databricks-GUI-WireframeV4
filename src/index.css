@@ -1266,6 +1266,10 @@
     --tw-enter-opacity: 0;
   }
 
+  .running {
+    animation-play-state: running;
+  }
+
   .slide-in-from-left {
     --tw-enter-translate-x: -100%;
   }

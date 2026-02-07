@@ -1,0 +1,16 @@
+{
+  "buildCommand": "npm run build || echo 'Using default build'",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "framework": null,
+  "functions": {
+    "api/upload-to-databricks.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 30
+    },
+    "api/test.js": {
+      "runtime": "nodejs20.x",
+      "maxDuration": 10
+    }
+  }
+}

@@ -22,6 +22,16 @@ export function LoadFilesSection() {
       setWorkspaceUrl(config.workspaceUrl || 'https://dbc-968ce34c-e36d.cloud.databricks.com');
       setDatabricksToken(config.databricksToken || '');
     }
+    
+    // Test if API routes are available
+    fetch('/api/test')
+      .then(res => res.json())
+      .then(data => {
+        console.log('✓ API routes are available:', data);
+      })
+      .catch(err => {
+        console.log('✗ API routes not available (running in mock mode):', err.message);
+      });
   }, []);
 
   // Save when credentials change
@@ -80,13 +90,20 @@ export function LoadFilesSection() {
         formData.append('databricks_token', databricksToken);
         formData.append('catalog_path', selectedPath);
 
+        console.log('Attempting upload via API route...');
+        
         const response = await fetch('/api/upload-to-databricks', {
           method: 'POST',
           body: formData,
         });
 
+        console.log('API Response status:', response.status);
+        console.log('API Response ok:', response.ok);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('API Response data:', data);
+          
           if (data.success) {
             setUploadStatus({
               type: 'success',
@@ -96,14 +113,26 @@ export function LoadFilesSection() {
             const fileInput = document.getElementById('file-upload') as HTMLInputElement;
             if (fileInput) fileInput.value = '';
             return;
+          } else {
+            throw new Error(data.error || 'Upload failed');
           }
+        } else {
+          // Try to get error details
+          let errorMsg = `API returned ${response.status}`;
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorMsg;
+          } catch (e) {
+            const errorText = await response.text();
+            console.error('API Error response:', errorText);
+            errorMsg = errorText || errorMsg;
+          }
+          throw new Error(errorMsg);
         }
-        
-        // If API route fails, fall through to mock mode
-        throw new Error('API route not available');
-      } catch (apiError) {
+      } catch (apiError: any) {
         // Mock mode for development/testing
-        console.log('Using mock upload mode (API route not available)');
+        console.log('API route failed:', apiError.message);
+        console.log('Using mock upload mode');
         
         // Simulate upload delay
         await new Promise(resolve => setTimeout(resolve, 1500));
