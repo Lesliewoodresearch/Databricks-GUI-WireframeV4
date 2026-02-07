@@ -139,9 +139,9 @@ export function LoadFilesSection() {
             console.error('API Error JSON:', errorData);
             errorMsg = errorData.error || errorMsg;
           } catch (e) {
-            const errorText = await response.text();
-            console.error('API Error response:', errorText);
-            errorMsg = errorText || errorMsg;
+            // If JSON parsing fails, try to read as text
+            console.error('Could not parse error as JSON:', e);
+            errorMsg = `API error ${response.status}: ${response.statusText}`;
           }
           throw new Error(errorMsg);
         }
