@@ -1,7 +1,7 @@
-// Vercel Serverless Function to upload files to Databricks
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { IncomingForm, File } from 'formidable';
-import { readFile } from 'fs/promises';
+// Next.js API route to upload files to Databricks
+import type { NextApiRequest, NextApiResponse } from 'next';
+import formidable from 'formidable';
+import fs from 'fs';
 
 // Disable default body parser to handle multipart/form-data
 export const config = {
@@ -10,7 +10,25 @@ export const config = {
   },
 };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+type ResponseData = {
+  success: boolean;
+  error?: string;
+  file?: {
+    name: string;
+    path: string;
+    size: number;
+    catalog: string;
+    schema: string;
+  };
+  message?: string;
+  details?: any;
+  stack?: string;
+};
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse<ResponseData>
+) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -26,13 +44,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Parse form data
-    const form = new IncomingForm();
-    const [fields, files] = await new Promise<[any, any]>((resolve, reject) => {
-      form.parse(req, (err, fields, files) => {
-        if (err) reject(err);
-        else resolve([fields, files]);
-      });
-    });
+    const form = formidable({});
+    const [fields, files] = await form.parse(req);
 
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     const workspaceUrl = Array.isArray(fields.workspace_url) ? fields.workspace_url[0] : fields.workspace_url;
@@ -56,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Read file contents
-    const fileBuffer = await readFile(file.filepath);
+    const fileBuffer = fs.readFileSync(file.filepath);
 
     // Create the file path in Databricks
     const fileName = file.originalFilename || 'upload';
