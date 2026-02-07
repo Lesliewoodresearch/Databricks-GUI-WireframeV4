@@ -1,40 +1,20 @@
-import { Database, Sparkles, Shield, Zap } from 'lucide-react';
-import { useRef } from 'react';
+import { Database, Sparkles, Shield, Zap, X } from 'lucide-react';
+import { useState } from 'react';
+import { LoadFilesSection } from './LoadFilesSection';
 
 interface LandingPageProps {
   onLoginClick: () => void;
 }
 
 export function LandingPage({ onLoginClick }: LandingPageProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showLoadFilesModal, setShowLoadFilesModal] = useState(false);
 
   const handleUploadFiles = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    // Mock upload to Databricks catalog
-    const fileNames = Array.from(files).map(f => f.name).join(', ');
-    alert(`Uploading ${files.length} file(s) to Databricks catalog:\n${fileNames}\n\nNote: This is a demo. In production, files would be uploaded to your Databricks workspace.`);
-    
-    // Reset input
-    event.target.value = '';
+    setShowLoadFilesModal(true);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={handleFileChange}
-      />
-
       {/* Header */}
       <header className="border-b border-slate-700/50 bg-slate-900/50 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
@@ -126,6 +106,26 @@ export function LandingPage({ onLoginClick }: LandingPageProps) {
           </div>
         </div>
       </div>
+
+      {/* Load Files Modal */}
+      {showLoadFilesModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-slate-800 border-b border-slate-700 px-6 py-4 flex justify-between items-center">
+              <h2 className="text-xl font-semibold text-white">Load Files to Databricks</h2>
+              <button
+                onClick={() => setShowLoadFilesModal(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6">
+              <LoadFilesSection />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
