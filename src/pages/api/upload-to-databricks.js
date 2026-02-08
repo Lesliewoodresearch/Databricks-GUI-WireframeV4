@@ -25,8 +25,7 @@ export default async function handler(req, res) {
 
   try {
     // Parse form data using formidable v3 API
-    // When using default import, access formidable.formidable
-    const form = formidable.formidable({});
+    const form = formidable({});
     
     const parseForm = () => new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
