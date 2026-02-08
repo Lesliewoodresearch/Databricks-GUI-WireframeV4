@@ -1,17 +1,14 @@
-// Vercel Serverless Function to upload files to Databricks
-// This file should be placed in the /api directory of your Vercel project
+import formidable from 'formidable';
+import fs from 'fs';
 
-const formidable = require('formidable');
-const fs = require('fs');
-
-// Disable default body parser for multipart/form-data
-module.exports.config = {
+// Vercel serverless function configuration
+export const config = {
   api: {
     bodyParser: false,
   },
 };
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -26,9 +23,17 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Parse form data
+    // Parse form data using formidable v3
     const form = formidable({});
-    const [fields, files] = await form.parse(req);
+    
+    const parseForm = () => new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) reject(err);
+        else resolve({ fields, files });
+      });
+    });
+
+    const { fields, files } = await parseForm();
 
     const file = Array.isArray(files.file) ? files.file[0] : files.file;
     const workspaceUrl = Array.isArray(fields.workspace_url) ? fields.workspace_url[0] : fields.workspace_url;
@@ -60,7 +65,6 @@ module.exports = async function handler(req, res) {
 
     // Upload to Databricks using the Files API
     const uploadUrl = `${workspaceUrl}/api/2.0/fs/files${volumePath}`;
-
     console.log(`Uploading to: ${uploadUrl}`);
 
     const uploadResponse = await fetch(uploadUrl, {
@@ -75,7 +79,6 @@ module.exports = async function handler(req, res) {
     if (!uploadResponse.ok) {
       const errorText = await uploadResponse.text();
       console.error('Databricks API Error:', errorText);
-
       return res.status(500).json({
         success: false,
         error: `Databricks upload failed: ${uploadResponse.status} - ${errorText}`,
@@ -99,10 +102,8 @@ module.exports = async function handler(req, res) {
       },
       message: 'File uploaded successfully to Databricks',
     });
-
   } catch (error) {
     console.error('API Error:', error);
-
     return res.status(500).json({
       success: false,
       error: error.message || 'Unknown error occurred',
